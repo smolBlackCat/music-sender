@@ -21,11 +21,8 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
         print(f"{f'REQUEST {self.REQUEST_CODE}':=^60}")
         print(f"[*] CONNECTION FROM {self.client_address}")
 
-        # The mixin class Communicator needs access to the socket.
-        self.sock = self.request
-
         while True:
-            message = self.recv()
+            message = self.recv(self.request)
 
             if message == b"":
                 break
@@ -42,13 +39,14 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
                 print(f"[*] SENDING {song_name} TO CLIENT")
                 self.song_request(index)
                 print(f"[*] {song_name} WAS SENT TO THE CLIENT")
+
         MusicSenderHandler.REQUEST_CODE += 1
 
     def list_request(self):
         """Process a 'list' request from the client."""
 
         songs = "$sep".join(self._get_songs())
-        self.send(songs.encode())
+        self.send(songs.encode(), self.request)
 
     def song_request(self, index: int):
         """Process a 'request <index>' request from the client. It
@@ -58,7 +56,7 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
             index: The index of the music.
         """
 
-        self.sendfile(self._get_songs(index))
+        self.sendfile(self._get_songs(index), self.request)
 
     def _get_songs(self, index: int = None) -> list[str] or str:
         if index is not None:
@@ -71,7 +69,8 @@ def main():
 
     os.chdir("/home/moura/Music")
 
-    with ThreadingTCPServer(("127.0.0.1", 4000), MusicSenderHandler) as server:
+    with ThreadingTCPServer(("192.168.43.64", 4000), MusicSenderHandler) \
+            as server:
         print("Server Started")
         server.serve_forever()
 
