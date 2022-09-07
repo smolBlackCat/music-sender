@@ -12,22 +12,22 @@ class Communicator:
     BUFFER_SIZE = 4096
 
     def __init__(self) -> None:
-        pass
+        self.sock = None
 
-    def send(self, message: bytes, sock):
+    def send(self, message: bytes):
         """Sends bytes to a remote socket."""
 
         msg_len_header = f"{len(message):<{Communicator.BUFFER_SIZE}}"
-        sock.send(msg_len_header.encode())
+        self.sock.send(msg_len_header.encode())
 
         buf_msg = io.BytesIO(message)
         while True:
             data = buf_msg.read(Communicator.BUFFER_SIZE)
             if data == b"":
                 break
-            sock.send(data)
+            self.sock.send(data)
 
-    def recv(self, sock) -> bytes:
+    def recv(self) -> bytes:
         """Receives bytes from a remote socket.
 
         Returns:
@@ -38,20 +38,20 @@ class Communicator:
         # The client might send nothing, therefore, return nothing as
         # well.
         try:
-            msg_len = int(sock.recv(Communicator.BUFFER_SIZE).decode())
+            msg_len = int(self.sock.recv(Communicator.BUFFER_SIZE).decode())
         except ValueError:
             return b""
 
         rcvd_len = 0
         msg = b""
         while rcvd_len != msg_len:
-            data = sock.recv(Communicator.BUFFER_SIZE)
+            data = self.sock.recv(Communicator.BUFFER_SIZE)
             msg += data
             rcvd_len += len(data)
 
         return msg
 
-    def sendfile(self, filename: str, sock):
+    def sendfile(self, filename: str):
         """Sends bytes from a file to a remote socket.
 
         Args:
@@ -60,26 +60,28 @@ class Communicator:
         """
 
         with open(filename, "rb") as file:
+
             file_size = os.stat(file.name).st_size
             header = f"{filename}:{file_size}"
             header = f"{header:<{Communicator.BUFFER_SIZE}}"
-            sock.send(header.encode())
+            self.sock.send(header.encode())
+
             while True:
                 data = file.read(Communicator.BUFFER_SIZE)
                 if data == b"":
                     break
-                sock.send(data)
+                self.sock.send(data)
 
-    def recvfile(self, sock):
+    def recvfile(self):
         """Receives bytes of a file from a remote socket."""
 
-        file_header = sock.recv(Communicator.BUFFER_SIZE).decode() \
+        file_header = self.sock.recv(Communicator.BUFFER_SIZE).decode() \
             .split(":")
 
         rcvd_len = 0
         with open(file_header[0], "wb") as file:
             while rcvd_len != int(file_header[1]):
-                data = sock.recv(Communicator.BUFFER_SIZE)
+                data = self.sock.recv(Communicator.BUFFER_SIZE)
                 file.write(data)
                 rcvd_len += len(data)
 
