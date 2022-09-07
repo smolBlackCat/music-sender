@@ -73,7 +73,11 @@ def main():
 
     with ThreadingTCPServer(("127.0.0.1", 4000), MusicSenderHandler) as server:
         print("Server Started")
-        server.serve_forever()
+        try:
+            server.serve_forever()
+        except KeyboardInterrupt:
+            print("", end="\r")
+    print("Server process terminated")
 
 
 if __name__ == "__main__":
