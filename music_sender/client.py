@@ -78,10 +78,9 @@ def main():
 
     os.chdir("dummy/")
 
-    client = MusicSenderClient(("127.0.0.1", 4000))
+    client = MusicSenderClient(("127.0.0.1", 5000))
 
     songs_list_out(client.missing_songs_list())
-    client.request_song(1)
 
 
 if __name__ == "__main__":

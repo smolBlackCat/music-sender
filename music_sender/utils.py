@@ -13,19 +13,35 @@ class Communicator:
 
     def __init__(self) -> None:
         self.sock = None
-
+    # TODO: Implement a better socket protocol. In this new protocol,
+    # send or recv should not be repeated twice, one should come after
+    # the another
     def send(self, message: bytes):
-        """Sends bytes to a remote socket."""
+        """Sends bytes to a remote socket following a structured
+        model.
+        """
 
-        msg_len_header = f"{len(message):<{Communicator.BUFFER_SIZE}}"
-        self.sock.send(msg_len_header.encode())
+        # TODO: Write code to send the actual message
 
-        buf_msg = io.BytesIO(message)
+        msg_header = f"{len(message)}"
+        self.sock.send(msg_header.encode())
+
+        ack_size = int(self.sock.recv(Communicator.BUFFER_SIZE))
+
+        msg_buffer = io.BytesIO(message)
         while True:
-            data = buf_msg.read(Communicator.BUFFER_SIZE)
+            data = msg_buffer.read(Communicator.BUFFER_SIZE)
             if data == b"":
                 break
             self.sock.send(data)
+        
+        rcvd_size = 0
+        ack = b""
+        while rcvd_size != ack_size:
+            ack_data = self.sock.recv(Communicator.BUFFER_SIZE)
+            rcvd_size += len(ack_data)
+        
+        return ack
 
     def recv(self) -> bytes:
         """Receives bytes from a remote socket.
@@ -33,21 +49,22 @@ class Communicator:
         Returns:
             The bytes received from a remote socket.
         """
-        msg_len = 0
-
-        # The client might send nothing, therefore, return nothing as
-        # well.
         try:
-            msg_len = int(self.sock.recv(Communicator.BUFFER_SIZE).decode())
+            msg_size = int(self.sock.recv(Communicator.BUFFER_SIZE))
         except ValueError:
+            # This happens when the remote socket had closed the
+            # connection
             return b""
+        self.sock.send(b"3")
 
-        rcvd_len = 0
+        rcvd_size = 0
         msg = b""
-        while rcvd_len != msg_len:
+        while rcvd_size != msg_size:
             data = self.sock.recv(Communicator.BUFFER_SIZE)
+            rcvd_size += len(data)
             msg += data
-            rcvd_len += len(data)
+        
+        self.sock.send(b"ACK")
 
         return msg
 
@@ -60,11 +77,8 @@ class Communicator:
         """
 
         with open(filename, "rb") as file:
-
             file_size = os.stat(file.name).st_size
-            header = f"{filename}:{file_size}"
-            header = f"{header:<{Communicator.BUFFER_SIZE}}"
-            self.sock.send(header.encode())
+            self.send(f"{filename}:{file_size}$end".encode())
 
             while True:
                 data = file.read(Communicator.BUFFER_SIZE)
@@ -75,15 +89,38 @@ class Communicator:
     def recvfile(self):
         """Receives bytes of a file from a remote socket."""
 
-        file_header = self.sock.recv(Communicator.BUFFER_SIZE).decode() \
-            .split(":")
+        filename, filesize = self.recv().decode().split(":")
 
         rcvd_len = 0
-        with open(file_header[0], "wb") as file:
-            while rcvd_len != int(file_header[1]):
+        with open(filename, "wb") as file:
+            while rcvd_len != int(filesize):
                 data = self.sock.recv(Communicator.BUFFER_SIZE)
                 file.write(data)
                 rcvd_len += len(data)
+
+    def _send(self, message: bytes):
+        buf = io.BytesIO(message)
+        while True:
+            data = buf.read(Communicator.BUFFER_SIZE)
+            if data == b"":
+                break
+            self.sock.send(data)
+
+    def _recv_msg_size(self) -> int:
+        msg_size = b""
+        while b"end" not in msg_size:
+            msg_size += self.sock.recv(Communicator.BUFFER_SIZE)
+        msg_size = msg_size.removesuffix(b"end")
+        print(msg_size)
+        return int(msg_size)
+
+    def _recv_file_header(self) -> str:
+        file_header = b""
+        while b"end" not in file_header:
+            file_header += self.sock.recv(Communicator.BUFFER_SIZE)
+        file_header = file_header.removesuffix(b"end")
+
+        return file_header.decode()
 
 
 def is_music_file(filename: str) -> bool:

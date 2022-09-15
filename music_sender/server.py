@@ -71,7 +71,7 @@ def main():
 
     os.chdir("/home/moura/Music")
 
-    with ThreadingTCPServer(("127.0.0.1", 4000), MusicSenderHandler) as server:
+    with ThreadingTCPServer(("127.0.0.1", 5000), MusicSenderHandler) as server:
         print("Server Started")
         try:
             server.serve_forever()
