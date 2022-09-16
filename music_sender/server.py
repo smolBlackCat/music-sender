@@ -1,5 +1,6 @@
 """Music Sender Server module."""
 
+import colorama
 import os
 import re
 from socketserver import BaseRequestHandler, ThreadingTCPServer
@@ -19,7 +20,8 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
     def handle(self) -> None:
 
         print(f"{f'REQUEST {self.REQUEST_CODE}':=^60}")
-        print(f"[*] CONNECTION FROM {self.client_address}")
+        print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
+            + f"[*] CONNECTION FROM {self.client_address}")
 
         # The mixin class Communicator needs access to the socket.
         self.sock = self.request
@@ -30,18 +32,22 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
             if message == b"":
                 break
 
-            print(f"[*] REQUEST FROM CLIENT IS \"{message.decode()}\" TYPE.")
+            print(colorama.Fore.YELLOW
+                + f"[*] REQUEST FROM CLIENT IS \"{message.decode()}\" TYPE.")
 
             if message == b"list":
-                print("[*] PROCESSING \"list\" REQUEST")
+                print(colorama.Fore.YELLOW + "[*] PROCESSING \"list\" REQUEST")
                 self.list_request()
-                print("[*] PROCESSING \"list\" REQUEST FINISHED")
+                print(colorama.Fore.GREEN
+                    + "[*] PROCESSING \"list\" REQUEST FINISHED")
             elif re.match(r"request \d+", message.decode()):
                 index = int(message[8:])
                 song_name = self._get_songs(index)
-                print(f"[*] SENDING {song_name} TO CLIENT")
+                print(colorama.Fore.YELLOW
+                    + f"[*] SENDING {song_name} TO CLIENT")
                 self.song_request(index)
-                print(f"[*] {song_name} WAS SENT TO THE CLIENT")
+                print(colorama.Fore.GREEN
+                    + f"[*] {song_name} WAS SENT TO THE CLIENT")
         MusicSenderHandler.REQUEST_CODE += 1
 
     def list_request(self):
@@ -65,19 +71,26 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
             return list(filter(is_music_file, os.listdir(".")))[index]
         return list(filter(is_music_file, os.listdir(".")))
 
-
+# TODO: Prettify server outputs
+# TODO: Create arguments input CLI
 def main():
     """Main Server Program."""
 
+    colorama.init(True)
+
     os.chdir("/home/moura/Music")
 
-    with ThreadingTCPServer(("127.0.0.1", 5000), MusicSenderHandler) as server:
-        print("Server Started")
+    host, port = "127.0.0.1", 5000
+
+    with ThreadingTCPServer((host, port), MusicSenderHandler) as server:
+        print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+            + f"[*] SERVER RUNNING AT {host}:{port}")
         try:
             server.serve_forever()
         except KeyboardInterrupt:
             print("", end="\r")
-    print("Server process terminated")
+    print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+        + "Server process terminated")
 
 
 if __name__ == "__main__":
