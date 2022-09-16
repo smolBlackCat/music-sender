@@ -87,8 +87,14 @@ class Communicator:
 
     def recvfile(self):
         """Receives bytes of a file from a remote socket."""
+        data = self.recv().decode()
 
-        filename, filesize = self.recv().decode().split(":")
+        # The only way of getting this reply from the server is by
+        # the client requesting a song from an out of bounds index.
+        if data == "out-of-bounds":
+            raise IndexError
+
+        filename, filesize = data.split(":")
 
         rcvd_len = 0
         with open(filename, "wb") as file:

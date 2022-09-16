@@ -45,12 +45,19 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
                     + "[*] PROCESSING \"list\" REQUEST FINISHED")
             elif re.match(r"request \d+", message.decode()):
                 index = int(message[8:])
-                song_name = self._get_songs(index)
+                try:
+                    song_name = self._get_songs(index)
+                except IndexError:
+                    print(colorama.Fore.RED + "INDEX IS OUT OF BOUNDS")
+                    self.send(b"out-of-bounds")
+                    break
+
                 print(colorama.Fore.YELLOW
                     + f"[*] SENDING {song_name} TO CLIENT")
                 self.song_request(index)
                 print(colorama.Fore.GREEN
                     + f"[*] {song_name} WAS SENT TO THE CLIENT")
+
         MusicSenderHandler.REQUEST_CODE += 1
 
     def list_request(self):

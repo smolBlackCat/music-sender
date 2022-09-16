@@ -49,6 +49,10 @@ class MusicSenderClient(Communicator):
 
         Args:
             index: The requested index from which the song comes from.
+
+        Raises:
+            IndexError: When the user requests a song from an out of
+                        bounds index.
         """
 
         self.send(f"request {index}".encode())
@@ -130,12 +134,15 @@ def main():
             print(colorama.Fore.RED + colorama.Style.BRIGHT
                   + "Indexes should not be negative!")
             return
-
-        print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
-              + "Downloading song...")
-        client.request_song(index)
-        print(colorama.Fore.GREEN + colorama.Style.BRIGHT
-              + "Song downloaded successfully!")
+        try:
+            print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
+                  + "Requesting song...")
+            client.request_song(index)
+            print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+                  + "Song downloaded successfully!")
+        except IndexError:
+            print(colorama.Fore.RED + colorama.Style.BRIGHT
+                  + f"There's no {index} index in the server!")
     elif args.request_missing:
         for index, missing in client.missing_songs_list():
             print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
