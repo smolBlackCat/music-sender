@@ -8,7 +8,7 @@ from socketserver import BaseRequestHandler, ThreadingTCPServer
 import colorama
 
 from .communication import Communicator, get_machine_local_ip
-from .utils import is_music_file
+from .utils import is_music_file, set_working_directory
 
 
 class MusicSenderHandler(Communicator, BaseRequestHandler):
@@ -88,19 +88,8 @@ def main():
 
     args = argp.parse_args()
 
-    try:
-        os.chdir(args.directory)
-    except FileNotFoundError:
-        print(colorama.Fore.RED + "Directory not found!")
-        return
-    except PermissionError:
-        print(colorama.Fore.RED
-            + "You're accessing a forbidden directory. try run it as an admin"
-            + colorama.Style.BRIGHT + " (NOT RECOMMENDED)")
-        return
-    except NotADirectoryError:
-        print(colorama.Fore.RED
-            + "Directory given is not actually a directory!")
+    if not set_working_directory(args.directory):
+        # Exit the application if the function failed to change directory
         return
 
     host, port = get_machine_local_ip(), args.port

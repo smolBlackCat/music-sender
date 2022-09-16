@@ -1,6 +1,11 @@
 """Music Sender Client module."""
 
+import argparse
 import os
+
+import colorama
+
+from .utils import address_valid, set_working_directory
 
 from .communication import Communicator, connection
 
@@ -51,7 +56,8 @@ class MusicSenderClient(Communicator):
         self.recvfile()
 
 
-def songs_list_out(songs_list: list[tuple[int, str]]) -> None:
+def songs_list_out(songs_list: list[tuple[int, str]], title="Songs List") \
+        -> None:
     """Prints out to the user the list of musics.
 
     Args:
@@ -60,24 +66,53 @@ def songs_list_out(songs_list: list[tuple[int, str]]) -> None:
                     respectively, that's going to be iterated.
     """
 
-    print("=-" * 30)
-    print(f"{'Songs List':^60}")
-    print("=-" * 30)
+    print(colorama.Fore.GREEN + "=-" * 30)
+    print(colorama.Fore.YELLOW + f"{title:^60}")
+    print(colorama.Fore.GREEN + "=-" * 30)
     for index, song in songs_list:
-        print(f"({index}) -> {song}")
-    print("=-" * 30)
+        print(colorama.Fore.BLUE + colorama.Style.BRIGHT + f"({index}) "
+              + colorama.Fore.WHITE + "->" + colorama.Fore.GREEN + f" {song}")
+    print(colorama.Fore.GREEN + "=-" * 30)
 
-# TODO: Create arguments input CLI
+
 def main():
     """Main Client Program."""
 
-    os.chdir("dummy/")
+    colorama.init(True)
 
-    client = MusicSenderClient(("127.0.0.1", 5000))
+    argp = argparse.ArgumentParser()
 
-    songs_list_out(client.missing_songs_list())
+    argp.add_argument("-hs", "--host", help="The server's host IP")
+    argp.add_argument("-p", "--port", type=int, help="The server's port")
+    argp.add_argument("-d", "--directory", default=".",
+                      help="Directory where the client will put the musics in.")
+    argp.add_argument("-l", "--list", action="store_true",
+                      help="Returns a list of songs available in the server.")
+    argp.add_argument("-r", "--request-song", default="",
+                      help="Request a song from a given index of the server's catalog.")
+    argp.add_argument("-lm", "--list-missing", action="store_true",
+                      help="Returns a list of musics that aren't in the client but in the "
+                      "server.")
+    argp.add_argument("-rm", "--request-missing", action="store_true",
+                      help="Requests all the missing songs.")
 
-    client.request_song(1)
+    args = argp.parse_args()
+
+    if not set_working_directory(args.directory):
+        return
+    if not address_valid((args.host, args.port)):
+        return
+
+    client = MusicSenderClient((args.host, args.port))
+
+    if args.list:
+        songs_list_out(client.songs_list())
+    if args.list_missing:
+        songs_list_out(client.missing_songs_list(), "Missing Songs List")
+    if args.request_song:
+        client.request_song(int(args.request_song))
+        print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+              + "Song downloaded successfully!")
 
 
 if __name__ == "__main__":
