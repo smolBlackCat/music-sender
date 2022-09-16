@@ -1,11 +1,14 @@
 """Music Sender Server module."""
 
-import colorama
+import argparse
 import os
 import re
 from socketserver import BaseRequestHandler, ThreadingTCPServer
 
-from .utils import Communicator, is_music_file
+import colorama
+
+from .communication import Communicator
+from .utils import is_music_file
 
 
 class MusicSenderHandler(Communicator, BaseRequestHandler):
@@ -71,7 +74,7 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
             return list(filter(is_music_file, os.listdir(".")))[index]
         return list(filter(is_music_file, os.listdir(".")))
 
-# TODO: Prettify server outputs
+
 # TODO: Create arguments input CLI
 def main():
     """Main Server Program."""

@@ -2,7 +2,7 @@
 
 import os
 
-from .utils import Communicator, connection
+from .communication import Communicator, connection
 
 
 class MusicSenderClient(Communicator):
@@ -67,7 +67,7 @@ def songs_list_out(songs_list: list[tuple[int, str]]) -> None:
         print(f"({index}) -> {song}")
     print("=-" * 30)
 
-
+# TODO: Create arguments input CLI
 def main():
     """Main Client Program."""
 
@@ -76,6 +76,8 @@ def main():
     client = MusicSenderClient(("127.0.0.1", 5000))
 
     songs_list_out(client.missing_songs_list())
+
+    client.request_song(1)
 
 
 if __name__ == "__main__":
