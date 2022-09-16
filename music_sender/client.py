@@ -5,9 +5,8 @@ import os
 
 import colorama
 
-from .utils import address_valid, set_working_directory
-
 from .communication import Communicator, connection
+from .utils import address_valid, set_working_directory
 
 
 class MusicSenderClient(Communicator):
@@ -84,17 +83,21 @@ def main():
 
     argp.add_argument("-hs", "--host", help="The server's host IP")
     argp.add_argument("-p", "--port", type=int, help="The server's port")
-    argp.add_argument("-d", "--directory", default=".",
-                      help="Directory where the client will put the musics in.")
-    argp.add_argument("-l", "--list", action="store_true",
-                      help="Returns a list of songs available in the server.")
-    argp.add_argument("-r", "--request-song", default="",
-                      help="Request a song from a given index of the server's catalog.")
-    argp.add_argument("-lm", "--list-missing", action="store_true",
-                      help="Returns a list of musics that aren't in the client but in the "
-                      "server.")
-    argp.add_argument("-rm", "--request-missing", action="store_true",
-                      help="Requests all the missing songs.")
+    argp.add_argument(
+        "-d", "--directory", default=".",
+        help="Directory where the client will put the musics in.")
+    argp.add_argument(
+        "-l", "--list", action="store_true",
+        help="Returns a list of songs available in the server.")
+    argp.add_argument(
+        "-r", "--request-song", default="",
+        help="Request a song from a given index of the server's catalog.")
+    argp.add_argument(
+        "-lm", "--list-missing", action="store_true",
+        help="Returns a list of musics that aren't in the client.")
+    argp.add_argument(
+        "-rm", "--request-missing", action="store_true",
+        help="Requests all the missing songs.")
 
     args = argp.parse_args()
 
@@ -109,10 +112,10 @@ def main():
         songs_list_out(client.songs_list())
     if args.list_missing:
         songs_list_out(client.missing_songs_list(), "Missing Songs List")
-    
+
     if args.request_song and args.request_missing:
         print(colorama.Fore.RED + colorama.Style.BRIGHT
-            + "request-song and request-missing should not be used together.")
+              + "request-song and request-missing should not be used together.")
         return
 
     if args.request_song:
@@ -122,10 +125,10 @@ def main():
             print(colorama.Fore.RED + colorama.Style.BRIGHT
                   + f"{args.request_song} is not a valid music index")
             return
-        
+
         if index < 0:
             print(colorama.Fore.RED + colorama.Style.BRIGHT
-                + "Indexes should not be negative!")
+                  + "Indexes should not be negative!")
             return
 
         print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
@@ -136,10 +139,10 @@ def main():
     elif args.request_missing:
         for index, missing in client.missing_songs_list():
             print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
-                + f"Downloading {missing}")
+                  + f"Downloading {missing}")
             client.request_song(index)
             print(colorama.Fore.GREEN + colorama.Style.BRIGHT
-                + f"{missing} Downloaded successfully")
+                  + f"{missing} Downloaded successfully")
 
 
 if __name__ == "__main__":
