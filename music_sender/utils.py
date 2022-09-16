@@ -2,6 +2,7 @@
 
 import io
 import os
+import socket
 
 
 class Communicator:
@@ -105,3 +106,15 @@ def is_music_file(filename: str) -> bool:
 
     music_exts = [".mp3", ".m4a", ".ogg", ".opus", ".flac"]
     return any(list(filter(lambda ext: ext in filename, music_exts)))
+
+
+def connection(request):
+    """Decorator function which executes essential code before making
+    a request.
+    """
+
+    def wrapper(self, *args, **kwargs):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as self.sock:
+            self.sock.connect(self.address)
+            return request(self, *args, **kwargs)
+    return wrapper
