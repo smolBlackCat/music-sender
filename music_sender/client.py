@@ -1,9 +1,8 @@
 """Music Sender Client module."""
 
 import os
-import socket
 
-from .utils import Communicator
+from .utils import Communicator, connection
 
 
 class MusicSenderClient(Communicator):
@@ -14,15 +13,7 @@ class MusicSenderClient(Communicator):
         self.address = address
         self.sock = None
 
-    def _connection_decorator(f):
-
-        def connection(self, *args, **kwargs):
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as self.sock:
-                self.sock.connect(self.address)
-                return f(self, *args, **kwargs)
-        return connection
-
-    @_connection_decorator
+    @connection
     def songs_list(self) -> list[tuple[int, str]]:
         """Makes a 'list' request to the server.
 
@@ -34,17 +25,21 @@ class MusicSenderClient(Communicator):
         self.send(b"list")
 
         songs = self.recv().decode().split("$sep")
-        return [(index, name) for index, name in enumerate(songs)]
+        return list(enumerate(songs))
 
     def missing_songs_list(self) -> list[tuple[int, str]]:
         """Make a 'list' request to the server and returns only the
         songs that aren't in the client current directory.
+
+        Returns:
+            A list containing tuples that contains respectively the
+            song's index and name.
         """
 
         songs = self.songs_list()
         return list(filter(lambda song: song[1] not in os.listdir("."), songs))
 
-    @_connection_decorator
+    @connection
     def request_song(self, index: int):
         """Makes a 'request <index>' request to the server.
 
