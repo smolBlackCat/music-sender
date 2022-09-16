@@ -45,7 +45,7 @@ def address_valid(addr: tuple[str, int]) -> bool:
     terminal.
     """
 
-    host_valid = re.match(r"(192.168.\d{1,3}.\d{1,3}|127.0.0.1)", addr[0])
+    host_valid = re.match(r"192\.168\.\d{1,3}\.\d{1,3}", addr[0])
     port_valid = 1024 <= addr[1] <= 65432
 
     if not host_valid:
