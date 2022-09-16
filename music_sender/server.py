@@ -7,7 +7,7 @@ from socketserver import BaseRequestHandler, ThreadingTCPServer
 
 import colorama
 
-from .communication import Communicator
+from .communication import Communicator, get_machine_local_ip
 from .utils import is_music_file
 
 
@@ -75,15 +75,35 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
         return list(filter(is_music_file, os.listdir(".")))
 
 
-# TODO: Create arguments input CLI
 def main():
     """Main Server Program."""
 
     colorama.init(True)
 
-    os.chdir("/home/moura/Music")
+    argp = argparse.ArgumentParser()
 
-    host, port = "127.0.0.1", 5000
+    argp.add_argument("-p", "--port", type=int, default=5000,
+        help="Server port")
+    argp.add_argument("-d", "--directory", default=".")
+
+    args = argp.parse_args()
+
+    try:
+        os.chdir(args.directory)
+    except FileNotFoundError:
+        print(colorama.Fore.RED + "Directory not found!")
+        return
+    except PermissionError:
+        print(colorama.Fore.RED
+            + "You're accessing a forbidden directory. try run it as an admin"
+            + colorama.Style.BRIGHT + " (NOT RECOMMENDED)")
+        return
+    except NotADirectoryError:
+        print(colorama.Fore.RED
+            + "Directory given is not actually a directory!")
+        return
+
+    host, port = get_machine_local_ip(), args.port
 
     with ThreadingTCPServer((host, port), MusicSenderHandler) as server:
         print(colorama.Fore.GREEN + colorama.Style.BRIGHT
