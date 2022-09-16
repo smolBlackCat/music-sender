@@ -109,10 +109,37 @@ def main():
         songs_list_out(client.songs_list())
     if args.list_missing:
         songs_list_out(client.missing_songs_list(), "Missing Songs List")
+    
+    if args.request_song and args.request_missing:
+        print(colorama.Fore.RED + colorama.Style.BRIGHT
+            + "request-song and request-missing should not be used together.")
+        return
+
     if args.request_song:
-        client.request_song(int(args.request_song))
+        try:
+            index = int(args.request_song)
+        except ValueError:
+            print(colorama.Fore.RED + colorama.Style.BRIGHT
+                  + f"{args.request_song} is not a valid music index")
+            return
+        
+        if index < 0:
+            print(colorama.Fore.RED + colorama.Style.BRIGHT
+                + "Indexes should not be negative!")
+            return
+
+        print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
+              + "Downloading song...")
+        client.request_song(index)
         print(colorama.Fore.GREEN + colorama.Style.BRIGHT
               + "Song downloaded successfully!")
+    elif args.request_missing:
+        for index, missing in client.missing_songs_list():
+            print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
+                + f"Downloading {missing}")
+            client.request_song(index)
+            print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+                + f"{missing} Downloaded successfully")
 
 
 if __name__ == "__main__":
