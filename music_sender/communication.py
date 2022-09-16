@@ -3,6 +3,8 @@
 import io
 import os
 import socket
+import subprocess
+import sys
 
 
 class Communicator:
@@ -116,4 +118,15 @@ def get_machine_local_ip() -> str:
     """
 
     ip = None
+
+    if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
+
+        host_info = subprocess.run(["hostname", "-I"] ,capture_output=True)
+
+        # The hostname command output follows the format:
+        #   <IP> <MAC> <newline>.
+        # Therefore, retrive the first value in the list.
+        ip = host_info.stdout.split(b" ")[0].decode()
+    elif sys.platform.startswith("win32"):
+        ip = socket.gethostbyname(socket.gethostname())
     return ip
