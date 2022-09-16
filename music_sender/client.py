@@ -85,8 +85,10 @@ def main():
 
     argp = argparse.ArgumentParser()
 
-    argp.add_argument("-hs", "--host", help="The server's host IP")
-    argp.add_argument("-p", "--port", type=int, help="The server's port")
+    argp.add_argument("-hs", "--host", help="The server's host IP",
+                      required=True)
+    argp.add_argument("-p", "--port", type=int, help="The server's port",
+                      required=True)
     argp.add_argument(
         "-d", "--directory", default=".",
         help="Directory where the client will put the musics in.")
