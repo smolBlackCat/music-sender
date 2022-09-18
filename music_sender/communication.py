@@ -71,7 +71,7 @@ class Communicator:
             # This happens when the remote socket had closed the
             # connection
             return b""
-        
+
         # Send the ACK header
         self.sock.send(b"3")
 
@@ -166,7 +166,7 @@ def get_machine_local_ip() -> str:
         A str representing a full IPV4 local IP.
     """
 
-    ip = None
+    ip_str = None
 
     if sys.platform.startswith("linux") or sys.platform.startswith("darwin"):
 
@@ -175,7 +175,7 @@ def get_machine_local_ip() -> str:
         # The hostname command output follows the format:
         #   <IP> <MAC> <newline>.
         # Therefore, retrive the first value in the list.
-        ip = host_info.stdout.split(b" ")[0].decode()
+        ip_str = host_info.stdout.split(b" ")[0].decode()
     elif sys.platform.startswith("win32"):
-        ip = socket.gethostbyname(socket.gethostname())
-    return ip
+        ip_str = socket.gethostbyname(socket.gethostname())
+    return ip_str
