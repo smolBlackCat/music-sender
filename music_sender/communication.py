@@ -47,6 +47,7 @@ class Communicator:
         while rcvd_size != ack_size:
             ack_data = self.sock.recv(Communicator.BUFFER_SIZE)
             rcvd_size += len(ack_data)
+            ack += ack_data
 
         return ack
 
@@ -70,6 +71,8 @@ class Communicator:
             # This happens when the remote socket had closed the
             # connection
             return b""
+        
+        # Send the ACK header
         self.sock.send(b"3")
 
         rcvd_size = 0
