@@ -7,5 +7,12 @@ setuptools.setup(
         "transferring files between computers through terminal.",
     author="De Moura",
     author_email="m0ur4@protonmail.com",
-    packages=["music_sender"]
+    packages=["music_sender"],
+    install_requires = ["colorama"],
+    entry_points= {
+        "console_scripts": [
+            "ms-server = music_sender.server:main",
+            "ms-client = music_sender.client:main"
+        ]
+    }
 )
