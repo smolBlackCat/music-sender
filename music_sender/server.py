@@ -24,10 +24,23 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
 
         print(f"{f'REQUEST {self.REQUEST_CODE}':=^60}")
         print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
-            + f"[*] CONNECTION FROM {self.client_address}")
+              + f"[*] CONNECTION FROM {self.client_address}")
 
         # The mixin class Communicator needs access to the socket.
         self.sock = self.request
+
+        self.request_handling_loop()
+
+        MusicSenderHandler.REQUEST_CODE += 1
+
+    def request_handling_loop(self):
+        """Handles the client requests
+
+        Raises:
+            BrokenPipeError:
+                When the remote socket abruptly closes connection
+                with the server.
+        """
 
         while True:
             message = self.recv()
@@ -36,13 +49,13 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
                 break
 
             print(colorama.Fore.YELLOW
-                + f"[*] REQUEST FROM CLIENT IS \"{message.decode()}\" TYPE.")
+                  + f"[*] REQUEST FROM CLIENT IS \"{message.decode()}\" TYPE.")
 
             if message == b"list":
                 print(colorama.Fore.YELLOW + "[*] PROCESSING \"list\" REQUEST")
                 self.list_request()
                 print(colorama.Fore.GREEN
-                    + "[*] PROCESSING \"list\" REQUEST FINISHED")
+                      + "[*] PROCESSING \"list\" REQUEST FINISHED")
             elif re.match(r"request \d+", message.decode()):
                 index = int(message[8:])
                 try:
@@ -53,17 +66,17 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
                     break
 
                 print(colorama.Fore.YELLOW
-                    + f"[*] SENDING {song_name} TO CLIENT")
+                      + f"[*] SENDING {song_name} TO CLIENT")
                 self.song_request(index)
                 print(colorama.Fore.GREEN
-                    + f"[*] {song_name} WAS SENT TO THE CLIENT")
-
-        MusicSenderHandler.REQUEST_CODE += 1
+                      + f"[*] {song_name} WAS SENT TO THE CLIENT")
+        self.sock.close()
 
     def list_request(self):
         """Process a 'list' request from the client."""
 
         songs = "$sep".join(self._get_songs())
+        songs = songs if songs else "no-song-available"
         self.send(songs.encode())
 
     def song_request(self, index: int):
@@ -90,7 +103,7 @@ def main():
     argp = argparse.ArgumentParser()
 
     argp.add_argument("-p", "--port", type=int, default=5000,
-        help="Server port")
+                      help="Server port")
     argp.add_argument("-d", "--directory", default=".")
 
     args = argp.parse_args()
@@ -103,13 +116,13 @@ def main():
 
     with ThreadingTCPServer((host, port), MusicSenderHandler) as server:
         print(colorama.Fore.GREEN + colorama.Style.BRIGHT
-            + f"[*] SERVER RUNNING AT {host}:{port}")
+              + f"[*] SERVER RUNNING AT {host}:{port}")
         try:
             server.serve_forever()
         except KeyboardInterrupt:
             print("", end="\r")
     print(colorama.Fore.GREEN + colorama.Style.BRIGHT
-        + "Server process terminated")
+          + "Server process terminated")
 
 
 if __name__ == "__main__":

@@ -28,7 +28,11 @@ class MusicSenderClient(Communicator):
 
         self.send(b"list")
 
-        songs = self.recv().decode().split("$sep")
+        raw_songs_msg = self.recv().decode()
+        if raw_songs_msg == "no-song-available":
+            return [(0, "")]
+
+        songs = raw_songs_msg.split("$sep")
         return list(enumerate(songs))
 
     def missing_songs_list(self) -> list[tuple[int, str]]:
@@ -73,6 +77,11 @@ def songs_list_out(songs_list: list[tuple[int, str]], title="Songs List") \
     print(colorama.Fore.YELLOW + f"{title:^60}")
     print(colorama.Fore.GREEN + "=-" * 30)
     for index, song in songs_list:
+        if not song:
+            print(colorama.Fore.RED + colorama.Style.BRIGHT
+                  + "There are no musics in the server")
+            break
+
         print(colorama.Fore.BLUE + colorama.Style.BRIGHT + f"({index}) "
               + colorama.Fore.WHITE + "->" + colorama.Fore.GREEN + f" {song}")
     print(colorama.Fore.GREEN + "=-" * 30)
