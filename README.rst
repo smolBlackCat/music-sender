@@ -12,14 +12,23 @@ device. When there's only two devices, an USB cable will do the job, but when
 there's more, the work is kind of troublesome.
 
 That's why Music Sender was created, to provide a efficient way of sending
-musics to each of your devices simultaneously.
+musics to each of your devices in a local network simultaneously.
+
+Music Sender Client
+-------------------
+
+.. image:: docs/images/ms_client.png
+
+Music Sender Server
+-------------------
+
+.. image:: docs/images/ms_server.png
 
 Dependencies
 ============
 
 * Python >= 3.7
 * colorama module
-
 
 Installation
 ============
@@ -40,3 +49,9 @@ to make sure everything is fine.::
     <ms-server|ms-client> -h
 
 If this shows a help guide, then everything is set up.
+
+Known Issues
+------------
+
+* Sending and receiving text messages only is fine, but the firewall may
+  interrupt in case the client requests the server a file.
