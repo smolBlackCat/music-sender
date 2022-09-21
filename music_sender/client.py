@@ -87,6 +87,68 @@ def songs_list_out(songs_list: list[tuple[int, str]], title="Songs List") \
     print(colorama.Fore.GREEN + "=-" * 30)
 
 
+def handle_client_requests(args: argparse.Namespace, client: MusicSenderClient):
+    """Executes each request the user has requested.
+
+    Args:
+        client: MusicSenderClient instance used for making the
+                requests.
+
+        args: Namespace object returned by the parse_args() method
+              containing the arguments given by the user.
+
+    Raises:
+        ConnectionRefusedError:
+            It happens when the given address isn't listening and the
+            client tries to requests something.
+    """
+
+    if args.list:
+        songs_list_out(client.songs_list())
+    if args.list_missing:
+        songs_list_out(client.missing_songs_list(), "Missing Songs List")
+
+    if args.request_song and args.request_missing:
+        print(colorama.Fore.RED + colorama.Style.BRIGHT
+              + "request-song and request-missing should not be used together.")
+        return
+
+    if args.request_song:
+        try:
+            index = int(args.request_song)
+        except ValueError:
+            print(colorama.Fore.RED + colorama.Style.BRIGHT
+                  + f"{args.request_song} is not a valid music index")
+            return
+
+        if index < 0:
+            print(colorama.Fore.RED + colorama.Style.BRIGHT
+                  + "Indexes should not be negative!")
+            return
+
+        try:
+            print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
+                  + "Requesting song...")
+            client.request_song(index)
+            print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+                  + "Song downloaded successfully!")
+        except IndexError:
+            print(colorama.Fore.RED + colorama.Style.BRIGHT
+                  + f"There's no {index} index in the server!")
+    elif args.request_missing:
+        for index, song in client.missing_songs_list():
+            if not song:
+                print(colorama.Fore.RED + colorama.Style.BRIGHT
+                      + "There are no musics to be downloaded!")
+                break
+
+            print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
+                  + f"Downloading {song}")
+            client.request_song(index)
+            print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+                  + f"{song} Downloaded successfully")
+
+
 def main():
     """Main Client Program."""
 
@@ -123,49 +185,11 @@ def main():
 
     client = MusicSenderClient((args.host, args.port))
 
-    if args.list:
-        songs_list_out(client.songs_list())
-    if args.list_missing:
-        songs_list_out(client.missing_songs_list(), "Missing Songs List")
-
-    if args.request_song and args.request_missing:
+    try:
+        handle_client_requests(args, client)
+    except ConnectionRefusedError:
         print(colorama.Fore.RED + colorama.Style.BRIGHT
-              + "request-song and request-missing should not be used together.")
-        return
-
-    if args.request_song:
-        try:
-            index = int(args.request_song)
-        except ValueError:
-            print(colorama.Fore.RED + colorama.Style.BRIGHT
-                  + f"{args.request_song} is not a valid music index")
-            return
-
-        if index < 0:
-            print(colorama.Fore.RED + colorama.Style.BRIGHT
-                  + "Indexes should not be negative!")
-            return
-        try:
-            print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
-                  + "Requesting song...")
-            client.request_song(index)
-            print(colorama.Fore.GREEN + colorama.Style.BRIGHT
-                  + "Song downloaded successfully!")
-        except IndexError:
-            print(colorama.Fore.RED + colorama.Style.BRIGHT
-                  + f"There's no {index} index in the server!")
-    elif args.request_missing:
-        for index, song in client.missing_songs_list():
-            if not song:
-                print(colorama.Fore.RED + colorama.Style.BRIGHT
-                      + "There are no musics to be downloaded!")
-                break
-
-            print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
-                  + f"Downloading {song}")
-            client.request_song(index)
-            print(colorama.Fore.GREEN + colorama.Style.BRIGHT
-                  + f"{song} Downloaded successfully")
+              + "There's no server listening in this address!")
 
 
 if __name__ == "__main__":
