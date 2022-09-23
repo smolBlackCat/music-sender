@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import random
 import re
 from socketserver import BaseRequestHandler, ThreadingTCPServer
 
@@ -53,7 +54,13 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
 
             if message == b"list":
                 print(colorama.Fore.YELLOW + "[*] PROCESSING \"list\" REQUEST")
-                self.list_request()
+                try:
+                    self.list_request()
+                except (BrokenPipeError, ConnectionResetError):
+                    print(colorama.Fore.RED + colorama.Style.BRIGHT
+                          + "[X] FAILED TO SEND LIST TO CLIENT. CLIENT "
+                          "CONNECTION CLOSED")
+                    break
                 print(colorama.Fore.GREEN
                       + "[*] PROCESSING \"list\" REQUEST FINISHED")
             elif re.match(r"request \d+", message.decode()):
@@ -67,13 +74,24 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
 
                 print(colorama.Fore.YELLOW
                       + f"[*] SENDING {song_name} TO CLIENT")
-                self.song_request(index)
+                try:
+                    self.song_request(index)
+                except (BrokenPipeError, ConnectionResetError):
+                    print(colorama.Fore.RED + colorama.Style.BRIGHT
+                          + f"[X] FAILED TO SEND {song_name} TO CLIENT")
+                    break
                 print(colorama.Fore.GREEN
                       + f"[*] {song_name} WAS SENT TO THE CLIENT")
         self.sock.close()
 
     def list_request(self):
-        """Process a 'list' request from the client."""
+        """Process a 'list' request from the client.
+
+        Raises:
+            BrokenPipeError:
+                When client socket suddenly stops its connection to
+                the server.
+        """
 
         songs = "$sep".join(self._get_songs())
         songs = songs if songs else "no-song-available"
@@ -85,6 +103,11 @@ class MusicSenderHandler(Communicator, BaseRequestHandler):
 
         Args:
             index: The index of the music.
+
+        Raises:
+            BrokenPipeError:
+                When client suddenly closes connection while server is
+                sending data.
         """
 
         self.sendfile(self._get_songs(index))
@@ -102,8 +125,8 @@ def main():
 
     argp = argparse.ArgumentParser()
 
-    argp.add_argument("-p", "--port", type=int, default=5000,
-                      help="Server port")
+    argp.add_argument("-p", "--port", type=int,
+                      default=random.randint(1024, 65432), help="Server port")
     argp.add_argument("-d", "--directory", default=".")
 
     args = argp.parse_args()
@@ -113,7 +136,6 @@ def main():
         return
 
     host, port = get_machine_local_ip(), args.port
-
     with ThreadingTCPServer((host, port), MusicSenderHandler) as server:
         print(colorama.Fore.GREEN + colorama.Style.BRIGHT
               + f"[*] SERVER RUNNING AT {host}:{port}")
@@ -121,8 +143,8 @@ def main():
             server.serve_forever()
         except KeyboardInterrupt:
             print("", end="\r")
-    print(colorama.Fore.GREEN + colorama.Style.BRIGHT
-          + "Server process terminated")
+        print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+              + "Server process terminated")
 
 
 if __name__ == "__main__":
