@@ -26,11 +26,16 @@ class Communicator:
             the given message was successfully sent.
 
         Raises:
-            BrokenPipeError: The remote tried to send data to a remote
-            socket that is closed.
+            BrokenPipeError:
+                The remote tried to send data to a remote closed
+                socket.
+
+            ConnectionResetError:
+                When the remote doesn't closes connection properly.
         """
 
         msg_header = f"{len(message)}"
+
         self.sock.send(msg_header.encode())
 
         ack_size = int(self.sock.recv(Communicator.BUFFER_SIZE))
@@ -58,11 +63,15 @@ class Communicator:
             The bytes received from a remote socket.
 
         Raises:
-            BrokenPipeError: As it is with Communicator.send() method,
-            the recv method implemented here will also send (ACK) data
-            to a remote socket, therefore, bringing the risk of
-            failing if the remote socket from which the (ACK) data is
-            being sent to is closed.
+            BrokenPipeError:
+                As it is with Communicator.send() method, the recv
+                method implemented here will also send (ACK) data to a
+                remote socket, therefore, bringing the risk of failing
+                if the remote socket from which the (ACK) data is
+                being sent to is closed.
+
+            ConnectionResetError:
+                When the remote doesn't closes connection properly.
         """
 
         try:
@@ -98,6 +107,9 @@ class Communicator:
                 Raised by the Communicator.send method utilised in
                 this method. It commonly happens when the remote
                 socket closes the connection.
+            
+            ConnectionResetError:
+                When the remote doesn't closes connection properly.
         """
 
         with open(filename, "rb") as file:
@@ -125,6 +137,9 @@ class Communicator:
 
             BrokenPipeError:
                 When the remote closes connection to this remote.
+            
+            ConnectionResetError:
+                When the remote doesn't closes connection properly.
         """
 
         data = self.recv().decode()
