@@ -24,6 +24,13 @@ class MusicSenderClient(Communicator):
         Returns:
             A list containing tuples that contains respectively the
             song's index and name.
+
+        Raises:
+            BrokenPipeError:
+                When the remote closes connection to this remote.
+
+            ConnectionResetError:
+                When the remote doesn't closes connection properly.
         """
 
         self.send(b"list")
@@ -42,6 +49,13 @@ class MusicSenderClient(Communicator):
         Returns:
             A list containing tuples that contains respectively the
             song's index and name.
+
+        Raises:
+            BrokenPipeError:
+                When the remote closes connection to this remote.
+
+            ConnectionResetError:
+                When the remote doesn't closes connection properly.
         """
 
         songs = self.songs_list()
@@ -57,6 +71,12 @@ class MusicSenderClient(Communicator):
         Raises:
             IndexError: When the user requests a song from an out of
                         bounds index.
+
+            BrokenPipeError:
+                When the remote closes connection to this remote.
+
+            ConnectionResetError:
+                When the remote doesn't closes connection properly.
         """
 
         self.send(f"request {index}".encode())
@@ -87,8 +107,102 @@ def songs_list_out(songs_list: list[tuple[int, str]], title="Songs List") \
     print(colorama.Fore.GREEN + "=-" * 30)
 
 
+def request_song_out(s_index: str, client: MusicSenderClient) -> bool:
+    """Requests a song and prints its progress. It also shows errors
+    if any.
+
+    Args:
+        s_index:
+            A alphanumeric string representing the index from where
+            the music is located in the server.
+        client:
+            A simple MusicSenderClient instance used for making the
+            requesst.
+
+    Raises:
+        ConnectionRefusedError:
+            It happens when the given address isn't listening and the
+            client tries to requests something.
+
+        ConnectionResetError:
+            It happens when, in the middle of contact, the server
+            crashes.
+
+    Returns:
+        A boolean value indicating success or failure in requesting a
+        song.
+    """
+
+    try:
+        index = int(s_index)
+    except ValueError:
+        print(colorama.Fore.RED + colorama.Style.BRIGHT
+              + f"{s_index} is not a valid music index")
+        return False
+
+    if index < 0:
+        print(colorama.Fore.RED + colorama.Style.BRIGHT
+              + "Indexes should not be negative!")
+        return False
+
+    print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
+          + "Requesting song...")
+    try:
+        client.request_song(index)
+    except IndexError:
+        print(colorama.Fore.RED + colorama.Style.BRIGHT
+              + f"There's no {index} index in the server!")
+        return False
+    except ConnectionError:
+        print(colorama.Fore.RED + colorama.Style.BRIGHT
+              + f"Failed to download. An error has occurred")
+        return False
+    else:
+        print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+              + "Song downloaded successfully!")
+        return True
+
+
+def request_missing_out(client: MusicSenderClient):
+    """Requests all the musics that are not in the client current
+    directory and prints the progress of the request. It also shows
+    errors if any.
+
+    Args:
+        client:
+            A MusicSenderClient instance used to make the requests.
+    Raises:
+        ConnectionRefusedError:
+            It happens when the given address isn't listening and the
+            client tries to requests something.
+
+        ConnectionResetError:
+            It happens when, in the middle of contact, the server
+            crashes.
+    """
+
+    print(colorama.Fore.GREEN + "-=" * 30)
+    for index, song in client.missing_songs_list():
+        if not song:
+            print(colorama.Fore.RED + colorama.Style.BRIGHT
+                  + "There are no musics to be downloaded!")
+            break
+
+        print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
+              + f"Downloading {song}")
+        try:
+            client.request_song(index)
+        except ConnectionError:
+            print(colorama.Fore.RED + colorama.Style.BRIGHT
+                  + f"Failed to download {song}. An error has occurred")
+        else:
+            print(colorama.Fore.GREEN + colorama.Style.BRIGHT
+                  + f"{song} Downloaded successfully")
+        print(colorama.Fore.GREEN + "-=" * 30)
+
+
 def handle_client_requests(args: argparse.Namespace, client: MusicSenderClient):
-    """Executes each request the user has requested.
+    """Executes each request the user has made.
 
     Args:
         client: MusicSenderClient instance used for making the
@@ -101,6 +215,10 @@ def handle_client_requests(args: argparse.Namespace, client: MusicSenderClient):
         ConnectionRefusedError:
             It happens when the given address isn't listening and the
             client tries to requests something.
+
+        ConnectionResetError:
+            It happens when, in the middle of contact, the server
+            crashes.
     """
 
     if args.list:
@@ -114,39 +232,11 @@ def handle_client_requests(args: argparse.Namespace, client: MusicSenderClient):
         return
 
     if args.request_song:
-        try:
-            index = int(args.request_song)
-        except ValueError:
-            print(colorama.Fore.RED + colorama.Style.BRIGHT
-                  + f"{args.request_song} is not a valid music index")
-            return
-
-        if index < 0:
-            print(colorama.Fore.RED + colorama.Style.BRIGHT
-                  + "Indexes should not be negative!")
-            return
-
-        try:
-            print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
-                  + "Requesting song...")
-            client.request_song(index)
-            print(colorama.Fore.GREEN + colorama.Style.BRIGHT
-                  + "Song downloaded successfully!")
-        except IndexError:
-            print(colorama.Fore.RED + colorama.Style.BRIGHT
-                  + f"There's no {index} index in the server!")
+        request_song_out(args.request_song, client)
     elif args.request_missing:
-        for index, song in client.missing_songs_list():
-            if not song:
-                print(colorama.Fore.RED + colorama.Style.BRIGHT
-                      + "There are no musics to be downloaded!")
-                break
+        request_missing_out(client)
 
-            print(colorama.Fore.YELLOW + colorama.Style.BRIGHT
-                  + f"Downloading {song}")
-            client.request_song(index)
-            print(colorama.Fore.GREEN + colorama.Style.BRIGHT
-                  + f"{song} Downloaded successfully")
+# TODO: Look for ways to refactoring this code
 
 
 def main():
@@ -178,18 +268,20 @@ def main():
 
     args = argp.parse_args()
 
-    if not set_working_directory(args.directory):
-        return
-    if not address_valid((args.host, args.port)):
+    if not (set_working_directory(args.directory)
+            and address_valid((args.host, args.port))):
         return
 
     client = MusicSenderClient((args.host, args.port))
 
     try:
         handle_client_requests(args, client)
+    except ConnectionResetError:
+        print(colorama.Fore.RED + colorama.Style.BRIGHT
+              + "Music Sender crashed!")
     except ConnectionRefusedError:
         print(colorama.Fore.RED + colorama.Style.BRIGHT
-              + "There's no server listening in this address!")
+              + "There's no server listening in this port!")
 
 
 if __name__ == "__main__":
